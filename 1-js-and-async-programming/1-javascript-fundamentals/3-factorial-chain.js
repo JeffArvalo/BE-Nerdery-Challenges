@@ -31,6 +31,35 @@ Requirements:
 
 */
 
-const factorialChain = (number, lastDigits) => {};
+const factorial = (number) => {
+  let factorial = number;
+  for (let i = number - 1; i > 0; i--) {
+    factorial = factorial * i;
+  }
+  return factorial;
+};
+
+const zeroGenerator = (number) => {
+  let zeros = "";
+  for (let i = 0; i <= number; i++) {
+    zeros += "0";
+  }
+  return zeros;
+};
+
+const factorialChain = (number, lastDigits) => {
+  let sumFactorials = 0;
+  for (let i = 0; i <= number; i++) {
+    sumFactorials += factorial(i);
+  }
+  let sumFactorialsString = sumFactorials.toString();
+  let diffStrings = lastDigits - sumFactorialsString.length;
+  if (diffStrings > 0) {
+    sumFactorialsString = zeroGenerator(diffStrings - 1) + sumFactorialsString;
+  } else if (diffStrings < 0) {
+    sumFactorialsString = sumFactorialsString.substring(-diffStrings);
+  }
+  return sumFactorialsString;
+};
 
 module.exports = factorialChain;
