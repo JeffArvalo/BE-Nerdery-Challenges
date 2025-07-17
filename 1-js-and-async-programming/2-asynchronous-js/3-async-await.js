@@ -47,9 +47,8 @@ const getCommonDislikedSubscription = async () => {
 
   for (let i = 0; i < users.length; i++) {
     let user = users[i];
-    let subscription = (await getUserSubscriptionByUserId(user.id))
-      .subscription;
-    subscription == "Basic"
+    let userSubscription = await getUserSubscriptionByUserId(user.id);
+    userSubscription.subscription == "Basic"
       ? basicSubscriptionCount++
       : premiumSubscriptionCount++;
   }
