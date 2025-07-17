@@ -17,8 +17,46 @@
  *
  * @returns {Promise<string>} Logs the subscription name as a string.
  */
+
+const {
+  getLikedMovies,
+  getDislikedMovies,
+  getUsers,
+  getUserSubscriptionByUserId,
+} = require("./utils/mocked-api");
+
 const getCommonDislikedSubscription = async () => {
   // Add your code here
+  let allUsers = await getUsers();
+  let likedMovies = await getLikedMovies();
+  let dislikedMovies = await getDislikedMovies();
+
+  let users = allUsers
+    .map((user) => {
+      let userLikeCount = likedMovies.find((review) => review.userId == user.id)
+        .movies.length;
+      let userDislikeCount = dislikedMovies.find(
+        (review) => review.userId == user.id,
+      ).movies.length;
+      if (userDislikeCount > userLikeCount) return user;
+    })
+    .filter((user) => user !== undefined);
+
+  let basicSubscriptionCount = 0;
+  let premiumSubscriptionCount = 0;
+
+  for (let i = 0; i < users.length; i++) {
+    let user = users[i];
+    let subscription = (await getUserSubscriptionByUserId(user.id))
+      .subscription;
+    subscription == "Basic"
+      ? basicSubscriptionCount++
+      : premiumSubscriptionCount++;
+  }
+
+  return basicSubscriptionCount > premiumSubscriptionCount
+    ? "Basic"
+    : "Premium";
 };
 
 getCommonDislikedSubscription().then((subscription) => {
