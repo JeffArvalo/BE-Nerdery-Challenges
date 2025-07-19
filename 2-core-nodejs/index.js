@@ -1,4 +1,5 @@
 const fs = require("fs");
+const { parse } = require("path");
 const readline = require("readline");
 const fileUrl = "wishlist.json";
 const rl = readline.createInterface({
@@ -19,6 +20,16 @@ function validateOption(numOption, min, max, selection) {
       console.clear();
       selection();
     }, 1000);
+  }
+}
+
+async function validateFloat(question) {
+  let price = parseFloat(await askQuestion(question));
+  if (isNaN(price)) {
+    console.log("Not valid number");
+    return validateFloat(question);
+  } else {
+    return price;
   }
 }
 
@@ -60,7 +71,8 @@ async function menu() {
   console.log("\t1- Add items to wishlist");
   console.log("\t2- View all wishlist items");
   console.log("\t3- Edit an existing item");
-  console.log("\t4- Remove an item\n");
+  console.log("\t4- Remove an item");
+  console.log("\t5- Wishlist Summary\n");
 
   let menuOption = await askQuestion(
     "What we will do today? (Select an option): ",
@@ -68,7 +80,7 @@ async function menu() {
 
   let numOption = parseInt(menuOption);
 
-  validateOption(numOption, 1, 4, menu);
+  validateOption(numOption, 1, 5, menu);
   if (!fs.existsSync(fileUrl))
     await fs.writeFile(fileUrl, "[]", "utf-8", (error) => {
       if (error) {
@@ -89,6 +101,9 @@ async function menu() {
     case 4:
       deleteItem();
       break;
+    case 5:
+      wishlistSummary();
+      break;
   }
 }
 
@@ -96,7 +111,7 @@ async function createItem() {
   console.clear();
   console.log("Create a new item");
   let name = await askQuestion("What is the name? ");
-  let price = await askQuestion("What is the price? $");
+  let price = await validateFloat("What is the price? ");
   let store = await askQuestion("What is the store? ");
 
   let oldData = await readFileToJson();
@@ -105,7 +120,7 @@ async function createItem() {
   let data = {
     id: newId,
     name: name,
-    price: parseFloat(price).toFixed(2),
+    price: price.toFixed(2),
     store: store,
   };
   oldData.push(data);
@@ -144,7 +159,7 @@ async function updateItem() {
     let name = await askQuestion(
       `What is the name? (old - ${existItem.name}): `,
     );
-    let price = await askQuestion(
+    let price = await validateFloat(
       `What is the price? (old - $${existItem.price}) $`,
     );
     let store = await askQuestion(
@@ -154,7 +169,7 @@ async function updateItem() {
     let data = {
       id: id,
       name: name,
-      price: parseFloat(price),
+      price: price.toFixed(2),
       store: store,
     };
 
@@ -181,7 +196,7 @@ async function deleteItem() {
     backToMenu();
   } else {
     let data = allData.splice(existItemIndex, 1);
-    console.log(data)
+    console.log(data);
     fs.writeFile(fileUrl, JSON.stringify(allData), (err) => {
       if (err) throw Error(err.message);
       console.log(`\nThe item ${data[0].name} was delete successful \n`);
@@ -189,4 +204,32 @@ async function deleteItem() {
     });
   }
 }
+
+function wishlistSummary() {
+  readFileToJson().then((allItems) => {
+    let totalPrice = 0;
+    let mostExpensive = allItems[0];
+    let itemsCount = 0;
+    let average = 0;
+    allItems.forEach((item) => {
+      let price = parseFloat(item.price);
+      totalPrice += price;
+      itemsCount++;
+
+      if (mostExpensive.price < item.price) {
+        mostExpensive = item;
+      }
+    });
+
+    average = totalPrice / itemsCount;
+
+    console.log("Most expensive item: ", mostExpensive);
+    console.log(`Average price: $${average.toFixed(2)}`);
+    console.log(`Total cost: $${totalPrice.toFixed(2)}`);
+    console.log(`Number of items: ${itemsCount}`);
+
+    backToMenu();
+  });
+}
+
 menu();
