@@ -34,15 +34,22 @@ const getUsersWithMoreDislikedMoviesThanLikedMovies = () => {
   // Add your code here
   return Promise.all([getUsers(), getLikedMovies(), getDislikedMovies()]).then(
     ([allUsers, likedMovies, dislikedmovies]) => {
-      return allUsers.map((user) => {
-        let userLikeCount = likedMovies.find(
-          (review) => review.userId == user.id,
-        ).movies.length;
-        let userDislikeCount = dislikedmovies.find(
-          (review) => review.userId == user.id,
-        ).movies.length;
-        if (userDislikeCount > userLikeCount) return user;
-      }).filter(user => user !== undefined);
+      const userLikeCount = new Map();
+      likedMovies.map((review) => {
+        userLikeCount.set(review.userId, review.movies.length);
+      });
+
+      const userDislikeCount = new Map();
+      dislikedmovies.map((review) => {
+        userDislikeCount.set(review.userId, review.movies.length);
+      });
+
+      return allUsers
+        .map((user) => {
+          if (userDislikeCount.get(user.id) > userLikeCount.get(user.id))
+            return user;
+        })
+        .filter((user) => user !== undefined);
     },
   );
 };
