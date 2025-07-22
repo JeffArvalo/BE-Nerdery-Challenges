@@ -39,27 +39,18 @@ const factorial = (number) => {
   return factorial;
 };
 
-const zeroGenerator = (number) => {
-  let zeros = "";
-  for (let i = 0; i <= number; i++) {
-    zeros += "0";
-  }
-  return zeros;
-};
-
 const factorialChain = (number, lastDigits) => {
   let sumFactorials = 0;
   for (let i = 0; i <= number; i++) {
     sumFactorials += factorial(i);
   }
-  let sumFactorialsString = sumFactorials.toString();
-  let diffStrings = lastDigits - sumFactorialsString.length;
-  if (diffStrings > 0) {
-    sumFactorialsString = zeroGenerator(diffStrings - 1) + sumFactorialsString;
-  } else if (diffStrings < 0) {
-    sumFactorialsString = sumFactorialsString.substring(-diffStrings);
+  const sumFactorialsString = sumFactorials.toString();
+  const diffStrings = lastDigits - (sumFactorialsString.length - 1);
+  if (diffStrings >= 0) {
+    return sumFactorialsString.padStart(lastDigits, "0");
+  } else {
+    return sumFactorialsString.slice(diffStrings);
   }
-  return sumFactorialsString;
 };
 
 module.exports = factorialChain;
