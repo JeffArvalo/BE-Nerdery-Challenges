@@ -33,20 +33,25 @@ Requirements:
 
 const palindromeCounter = (text, minLength) => {
   let counter = 0;
-  let words = text.split(" ");
+  const words = text.split(" ");
 
   words.forEach((word) => {
     if (word.length < minLength) {
       return;
     }
     word = word.replace(".", "").toLowerCase();
+    if (word[0] !== word[word.length - 1]) {
+      return;
+    }
+
     let reverseWord = "";
+
     for (let i = word.length - 1; i >= 0; i--) {
       reverseWord += word[i];
     }
 
-    if(reverseWord === word){
-        counter++
+    if (reverseWord === word) {
+      counter++;
     }
   });
 
