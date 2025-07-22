@@ -19,16 +19,19 @@ findMajorityElement([1, 2, 3, 4, 5]); // Expected output: null
 
 */
 const findMajorityElement = (arr) => {
-  let majority = Math.floor(arr.length / 2);
+  const majority = Math.floor(arr.length / 2);
   let majorityElement = null;
 
-  for (let i = 0; i < arr.length; i++) {
-    const element = arr[i];
-    let counterElement = arr.filter((x) => x == element).length;
-    if (counterElement > majority) {
-      return element;
+  arr.map((element) => {
+    if (majorityElement === element) {
+      return;
     }
-  }
+
+    if (arr.filter((x) => x == element).length > majority) {
+      majorityElement = element;
+    }
+    return;
+  });
 
   return majorityElement;
 };
