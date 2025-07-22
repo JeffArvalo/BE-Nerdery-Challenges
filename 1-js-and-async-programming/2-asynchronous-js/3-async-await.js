@@ -27,35 +27,53 @@ const {
 
 const getCommonDislikedSubscription = async () => {
   // Add your code here
-  let allUsers = await getUsers();
-  let likedMovies = await getLikedMovies();
-  let dislikedMovies = await getDislikedMovies();
+  const allUsers = await getUsers();
+  const likedMovies = await getLikedMovies();
+  const dislikedmovies = await getDislikedMovies();
 
-  let users = allUsers
+  const userLikeCount = new Map();
+  likedMovies.map((review) => {
+    userLikeCount.set(review.userId, review.movies.length);
+  });
+
+  const userDislikeCount = new Map();
+  dislikedmovies.map((review) => {
+    userDislikeCount.set(review.userId, review.movies.length);
+  });
+
+  const users = allUsers
     .map((user) => {
-      let userLikeCount = likedMovies.find((review) => review.userId == user.id)
-        .movies.length;
-      let userDislikeCount = dislikedMovies.find(
-        (review) => review.userId == user.id,
-      ).movies.length;
-      if (userDislikeCount > userLikeCount) return user;
+      if (userDislikeCount.get(user.id) > userLikeCount.get(user.id))
+        return user;
     })
     .filter((user) => user !== undefined);
 
-  let basicSubscriptionCount = 0;
-  let premiumSubscriptionCount = 0;
+  const subscriptionsCount = new Map();
+  await users.map(async (user) => {
+    const subscription = await getUserSubscriptionByUserId(user.id);
+    const subscriptionName = subscription.subscription;
 
-  for (let i = 0; i < users.length; i++) {
-    let user = users[i];
-    let userSubscription = await getUserSubscriptionByUserId(user.id);
-    userSubscription.subscription == "Basic"
-      ? basicSubscriptionCount++
-      : premiumSubscriptionCount++;
-  }
+    if (subscriptionsCount.has(subscriptionName)) {
+      subscriptionsCount.set(
+        subscriptionName,
+        subscriptionsCount.get(subscriptionName) + 1,
+      );
+    } else {
+      subscriptionsCount.set(subscriptionName, 1);
+    }
+  });
 
-  return basicSubscriptionCount > premiumSubscriptionCount
-    ? "Basic"
-    : "Premium";
+  let commonSubsciption = "";
+  let maxCount = 0;
+
+  subscriptionsCount.forEach((value, key) => {
+    if (value > maxCount) {
+      maxCount = value;
+      commonSubsciption = key;
+    }
+  });
+
+  return commonSubsciption;
 };
 
 getCommonDislikedSubscription().then((subscription) => {
