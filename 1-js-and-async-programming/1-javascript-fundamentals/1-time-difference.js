@@ -16,17 +16,17 @@ timeDifference(7200, 3400); // Expected output: "01:03:20"
 
 */
 
-const formatTime = (num) => {
-  num = Math.floor(num);
-  return num < 10 ? `0${num}` : `${num}`;
+const formatNumToTwoDigits = (num) => {
+  const calculateTime = Math.floor(num).toString();
+  return calculateTime.padStart(2, "0");
 };
 
 const timeDifference = (a, b) => {
-  let diff = a > b ? a - b : b - a;
-  let hours = diff / 3600;
-  let mins = (diff % 3600) / 60;
-  let sec = diff % 60;
-  return `${formatTime(hours)}:${formatTime(mins)}:${formatTime(sec)}`;
+  const diff = Math.abs(a - b);
+  const hours = formatNumToTwoDigits(diff / 3600);
+  const mins = formatNumToTwoDigits((diff % 3600) / 60);
+  const sec = formatNumToTwoDigits(diff % 60);
+  return `${hours}:${mins}:${sec}`;
 };
 
 module.exports = timeDifference;
