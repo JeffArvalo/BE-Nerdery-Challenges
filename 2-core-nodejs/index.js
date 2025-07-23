@@ -1,69 +1,11 @@
 const fs = require("fs");
-const { parse } = require("path");
-const readline = require("readline");
-const fileUrl = "wishlist.json";
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-let askQuestion = (question) => {
-  return new Promise((resolve) => {
-    rl.question(question, resolve);
-  });
-};
-
-function validateOption(numOption, min, max, selection) {
-  if (isNaN(numOption) || numOption < min || numOption > max) {
-    console.error("Invalid option selected.");
-    setTimeout(() => {
-      console.clear();
-      selection();
-    }, 1000);
-  }
-}
-
-async function validateFloat(question) {
-  let price = parseFloat(await askQuestion(question));
-  if (isNaN(price)) {
-    console.log("Not valid number");
-    return validateFloat(question);
-  } else {
-    return price;
-  }
-}
-
-readFileToJson = () => {
-  return new Promise((resolve, reject) => {
-    fs.readFile(fileUrl, "utf-8", (error, data) => {
-      if (error) {
-        console.error(error);
-        console.log("Error ocurried");
-        backToMenu();
-        return reject(error);
-      }
-
-      resolve(JSON.parse(data));
-    });
-  });
-};
-
-let backToMenu = () => {
-  console.log("\nGo back to menu?");
-  console.log("1- Yes");
-  console.log("2- No");
-
-  askQuestion("Select an option ").then((select) => {
-    let numOption = parseInt(select);
-    if (numOption == 1) {
-      setTimeout(() => {
-        menu();
-      }, 1000);
-    } else {
-      process.exit();
-    }
-  });
-};
+const {
+  askQuestion,
+  fileUrl,
+  readFileToJson,
+  validateFloat,
+  validateOption,
+} = require("./utils");
 
 async function menu() {
   console.clear();
@@ -81,132 +23,170 @@ async function menu() {
   let numOption = parseInt(menuOption);
 
   validateOption(numOption, 1, 5, menu);
-  if (!fs.existsSync(fileUrl))
-    await fs.writeFile(fileUrl, "[]", "utf-8", (error) => {
+  if (!fs.existsSync(fileUrl)) {
+    fs.writeFile(fileUrl, "[]", "utf-8", (error) => {
       if (error) {
         console.error(error);
         return;
       }
     });
+  }
+
   switch (numOption) {
     case 1:
-      createItem();
+      await createItem();
       break;
     case 2:
-      readItems();
+      await readItems();
       break;
     case 3:
-      updateItem();
+      await updateItem();
       break;
     case 4:
-      deleteItem();
+      await deleteItem();
       break;
     case 5:
-      wishlistSummary();
+      await wishlistSummary();
       break;
   }
 }
 
-async function createItem() {
-  console.clear();
-  console.log("Create a new item");
-  let name = await askQuestion("What is the name? ");
-  let price = await validateFloat("What is the price? ");
-  let store = await askQuestion("What is the store? ");
+const backToMenu = () => {
+  console.log("\nGo back to menu?");
+  console.log("1- Yes");
+  console.log("2- No");
 
-  let oldData = await readFileToJson();
-  let newId = oldData.length == 0 ? 1 : oldData[oldData.length - 1].id + 1;
-
-  let data = {
-    id: newId,
-    name: name,
-    price: price.toFixed(2),
-    store: store,
-  };
-  oldData.push(data);
-
-  fs.writeFile(fileUrl, JSON.stringify(oldData), (err) => {
-    if (err) throw Error(err.message);
-    console.log(`\nThe item ${data.name} was created successful\n`);
-    backToMenu();
-  });
-}
-
-function readItems() {
-  readFileToJson().then(async (items) => {
-    if (Object.keys(items).length === 0) {
-      console.log("\nThe wishlist is empty.\n");
+  askQuestion("Select an option ").then((select) => {
+    let numOption = parseInt(select);
+    if (numOption == 1) {
+      setTimeout(() => {
+        menu();
+      }, 1000);
     } else {
-      console.log("\n", items);
+      process.exit();
     }
-    backToMenu();
   });
-}
+};
 
-async function updateItem() {
-  console.clear();
-  console.log("Edit an existing item");
-  let id = parseInt(await askQuestion("What is the ID? "));
-  let allData = await readFileToJson();
+const createItem = async () => {
+  try {
+    console.clear();
+    console.log("Create a new item");
+    let name = await askQuestion("What is the name? ");
+    let price = await validateFloat("What is the price? ");
+    let store = await askQuestion("What is the store? ");
 
-  let existItemIndex = allData.findIndex((item) => item.id == id);
-  if (existItemIndex === -1) {
-    console.log(`Item with id ${id} doesn't exist \n`);
-    backToMenu();
-  } else {
-    let existItem = allData[existItemIndex];
-
-    let name = await askQuestion(
-      `What is the name? (old - ${existItem.name}): `,
-    );
-    let price = await validateFloat(
-      `What is the price? (old - $${existItem.price}) $`,
-    );
-    let store = await askQuestion(
-      `What is the store? (old - ${existItem.store}): `,
-    );
+    let oldData = (await readFileToJson()) || [];
+    let newId = oldData.length == 0 ? 1 : oldData[oldData.length - 1].id + 1;
 
     let data = {
-      id: id,
+      id: newId,
       name: name,
       price: price.toFixed(2),
       store: store,
     };
+    oldData.push(data);
 
-    allData[existItemIndex] = data;
-
-    fs.writeFile(fileUrl, JSON.stringify(allData), (err) => {
+    fs.writeFile(fileUrl, JSON.stringify(oldData), (err) => {
       if (err) throw Error(err.message);
-      console.log(`The item ${data.name} was edited successful \n\n`);
+      console.log(`\nThe item ${data.name} was created successful\n`);
       backToMenu();
     });
+  } catch (error) {
+    console.error("An error occurred while creating the item:", error);
+    backToMenu();
+  }
+};
+
+const readItems = async () => {
+  readFileToJson()
+    .then(async (items) => {
+      if (Object.keys(items).length === 0) {
+        console.log("\nThe wishlist is empty.\n");
+      } else {
+        console.log("\n", items);
+      }
+      backToMenu();
+    })
+    .catch((error) => {
+      console.error("An error occurred while reading items:", error);
+    });
+};
+
+async function updateItem() {
+  try {
+    console.clear();
+    console.log("Edit an existing item");
+    let id = parseInt(await askQuestion("What is the ID? "));
+    let allData = await readFileToJson();
+
+    let existItemIndex = allData.findIndex((item) => item.id == id);
+    if (existItemIndex === -1) {
+      console.log(`Item with id ${id} doesn't exist \n`);
+      backToMenu();
+    } else {
+      let existItem = allData[existItemIndex];
+
+      let name = await askQuestion(
+        `What is the name? (old - ${existItem.name}): `,
+      );
+      let price = await validateFloat(
+        `What is the price? (old - $${existItem.price}) $`,
+      );
+      let store = await askQuestion(
+        `What is the store? (old - ${existItem.store}): `,
+      );
+
+      let data = {
+        id: id,
+        name: name,
+        price: price.toFixed(2),
+        store: store,
+      };
+
+      allData[existItemIndex] = data;
+
+      fs.writeFile(fileUrl, JSON.stringify(allData), (err) => {
+        if (err) throw Error(err.message);
+        console.log(`The item ${data.name} was edited successful \n\n`);
+        backToMenu();
+      });
+    }
+  } catch (error) {
+    console.error("An error occurred while edit the item:", error);
+    backToMenu();
   }
 }
 
 async function deleteItem() {
-  console.clear();
-  console.log("Remove an item.");
-  let id = parseInt(await askQuestion("What is the ID? "));
-  let allData = await readFileToJson();
+  try {
+    console.clear();
+    console.log("Remove an item.");
+    let id = parseInt(await askQuestion("What is the ID? "));
+    let allData = await readFileToJson();
 
-  let existItemIndex = allData.findIndex((item) => item.id == id);
+    let existItemIndex = allData.findIndex((item) => item.id == id);
 
-  if (existItemIndex === -1) {
-    console.log(`\nItem with id ${id} doesn't exist \n`);
-    backToMenu();
-  } else {
-    let data = allData.splice(existItemIndex, 1);
-    console.log(data);
-    fs.writeFile(fileUrl, JSON.stringify(allData), (err) => {
-      if (err) throw Error(err.message);
-      console.log(`\nThe item ${data[0].name} was delete successful \n`);
+    if (existItemIndex === -1) {
+      console.log(`\nItem with id ${id} doesn't exist \n`);
       backToMenu();
-    });
+    } else {
+      let data = allData.splice(existItemIndex, 1);
+      console.log(data);
+      fs.writeFile(fileUrl, JSON.stringify(allData), (err) => {
+        if (err) throw Error(err.message);
+        console.log(`\nThe item ${data[0].name} was delete successful \n`);
+        backToMenu();
+      });
+    }
+  } catch (error) {
+    console.error("An error occurred while deleting the item:", error);
+    backToMenu();
   }
 }
 
-function wishlistSummary() {
-  readFileToJson().then((allItems) => {
+async function wishlistSummary() {
+  return readFileToJson().then((allItems) => {
     let totalPrice = 0;
     let mostExpensive = allItems[0];
     let itemsCount = 0;
@@ -233,3 +213,7 @@ function wishlistSummary() {
 }
 
 menu();
+
+module.exports = {
+  backToMenu,
+};
