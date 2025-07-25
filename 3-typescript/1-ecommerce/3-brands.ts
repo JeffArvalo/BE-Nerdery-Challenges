@@ -12,10 +12,38 @@
  * - The return should be a type that allow us to define the country name as a key and the amount of products as a value.
  */
 
+import { Brand, Product } from "./1-types";
+import { buildProductCatalog } from "./2-products";
+import { readJsonFile } from "./utils/read-json.util";
+
+type CountryProductCount = {
+  country: string;
+  productCount: number;
+};
+
 async function getCountriesWithBrandsAndProductCount(
-  brands: unknown[],
-  products: unknown[],
-): Promise<unknown> {
+  brands: Brand[],
+  products: Product[],
+): Promise<CountryProductCount[]> {
   // Implement the function logic here
-  return;
+  return buildProductCatalog(products, brands).then((enrichedProducts) => {
+    const countryProductMap = new Map<string, number>();
+
+    enrichedProducts.forEach((product) => {
+      const country = product.brandInfo.headquarters.split(", ")[1];
+      countryProductMap.set(country, (countryProductMap.get(country) ?? 0) + 1);
+    });
+
+    return Array.from(countryProductMap, ([country, productCount]) => {
+      return { country, productCount };
+    });
+  });
 }
+
+readJsonFile<Brand>("./data/brands.json").then((brands) => {
+  readJsonFile<Product>("./data/products.json").then((products) => {
+    getCountriesWithBrandsAndProductCount(brands, products).then((result) => {
+      console.log(result);
+    });
+  });
+});
