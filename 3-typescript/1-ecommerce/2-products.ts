@@ -18,8 +18,68 @@
  *
  *
  **/
+import { Brand, Product } from "./1-types";
+import { readJsonFile } from "./utils/read-json.util";
 
-async function analyzeProductPrices(products: any[]): Promise<any> {}
+type AnalysisProductPriceResult = {
+  totalPrice: number;
+  averagePrice: number;
+  mostExpensiveProduct: Product;
+  cheapestProduct: Product;
+  onSaleCount: number;
+  averageDiscount?: number;
+};
+
+async function analyzeProductPrices(
+  products: Product[],
+): Promise<AnalysisProductPriceResult> {
+  let analysis: AnalysisProductPriceResult = {
+    totalPrice: 0,
+    averagePrice: 0,
+    mostExpensiveProduct: products[0],
+    cheapestProduct: products[0],
+    onSaleCount: 0,
+    averageDiscount: 0,
+  };
+
+  let totalDiscount = 0;
+
+  products.forEach((product) => {
+    analysis.totalPrice += product.price;
+    if (product.price > analysis.mostExpensiveProduct.price) {
+      analysis.mostExpensiveProduct = product;
+    }
+    if (product.price < analysis.cheapestProduct.price) {
+      analysis.cheapestProduct = product;
+    }
+
+    if (product.onSale) {
+      analysis.onSaleCount++;
+      if (product.salePrice !== null) {
+        totalDiscount +=
+          ((product.price - product.salePrice) / product.price) * 100;
+      }
+    }
+  });
+
+  if (products.length > 0) {
+    analysis.averagePrice =
+      Math.round((analysis.totalPrice / products.length) * 100) / 100;
+
+    if (analysis.onSaleCount > 0) {
+      analysis.averageDiscount =
+        Math.round((totalDiscount / analysis.onSaleCount) * 100) / 100;
+    }
+  }
+
+  return analysis;
+}
+
+/*readJsonFile<Product>("./data/products.json").then((products) => {
+  analyzeProductPrices(products).then((result) => {
+    console.log(`Analyse product prices ${result}`);
+  });
+});*/
 
 /**
  *  Challenge 2: Build a Product Catalog with Brand Metadata
@@ -35,12 +95,47 @@ async function analyzeProductPrices(products: any[]): Promise<any> {}
   - The brandInfo field should include the rest of the brand metadata (name, logo, description, etc.).
  */
 
-async function buildProductCatalog(
-  products: unknown[],
-  brands: unknown[],
-): Promise<unknown[]> {
-  return [];
+interface EnrichedProduct extends Product {
+  brandInfo: Brand;
 }
+
+export async function buildProductCatalog(
+  products: Product[],
+  brands: Brand[],
+): Promise<EnrichedProduct[]> {
+  let enrichedProducts: EnrichedProduct[] = [];
+  products.map((product) => {
+    let enrichedProduct: EnrichedProduct;
+    if (!product.isActive) {
+      return;
+    }
+
+    const brand = brands.find(
+      (brand) => brand.id === product.brandId && brand.isActive,
+    );
+
+    if (brand === undefined || !brand.isActive) {
+      return;
+    }
+
+    enrichedProduct = {
+      ...product,
+      brandInfo: { ...brand },
+    };
+
+    enrichedProducts.push(enrichedProduct);
+  });
+
+  return enrichedProducts;
+}
+
+/*readJsonFile<Product>("./data/products.json").then((products) => {
+  readJsonFile<Brand>("./data/brands.json").then((brands) => {
+    buildProductCatalog(products, brands).then((result) => {
+      console.log(result);
+    });
+  });
+});*/
 
 /**
  * Challenge 3: One image per product
@@ -57,9 +152,22 @@ async function buildProductCatalog(
  */
 
 async function filterProductsWithOneImage(
-  products: unknown[],
-): Promise<unknown[]> {
+  products: Product[],
+): Promise<Product[]> {
   // Implement the function logic here
 
-  return [];
+  return products
+    .map((product) => {
+      if (product.images.length >= 1) {
+        product.images = [product.images[0]];
+        return product;
+      }
+    })
+    .filter((product) => product !== undefined);
 }
+
+readJsonFile<Product>("./data/products.json").then((products) => {
+  filterProductsWithOneImage(products).then((result) => {
+    console.log(result);
+  });
+});
