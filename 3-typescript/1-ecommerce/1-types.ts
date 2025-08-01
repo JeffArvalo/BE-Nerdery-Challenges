@@ -21,17 +21,24 @@
 //! Add necessary type definitions for the products json file
 type ProductImage = {
   id: number;
-  url: string;
+  url: `products/${string}.jpg`;
   alt: string;
   isMain: boolean;
 };
+
+const enum ArchSupport{
+  LOW = "Low",
+  MEDIUM = "Medium",
+  MEDIUMHIGH = "Medium to High",
+  HIGH = "High"
+}
 
 type ProductSpecification = {
   material: string;
   weight: string;
   cushioning: string;
   closure: string;
-  archSupport?: string;
+  archSupport?: ArchSupport;
   ankleSupport?: string;
   shaftHeight?: string;
   heelDrop?: string;
@@ -52,7 +59,7 @@ export interface Product {
   isVisible: boolean;
   description: string;
   descriptionShort: string;
-  realeaseDate: Date;
+  realeaseDate: string;
   keywords: string;
   title: string;
   isActive: boolean;
@@ -106,7 +113,7 @@ type SocialMediaBrand = {
 };
 
 export type Brand = {
-  id: string | number;
+  id: number;
   name: string;
   logo: string;
   description: string;
