@@ -33,7 +33,7 @@ type AnalysisProductPriceResult = {
 async function analyzeProductPrices(
   products: Product[],
 ): Promise<AnalysisProductPriceResult> {
-  let analysis: AnalysisProductPriceResult = {
+  let analysis = {
     totalPrice: 0,
     averagePrice: 0,
     mostExpensiveProduct: products[0],
@@ -75,11 +75,11 @@ async function analyzeProductPrices(
   return analysis;
 }
 
-/*readJsonFile<Product>("./data/products.json").then((products) => {
+readJsonFile<Product>("./data/products.json").then((products) => {
   analyzeProductPrices(products).then((result) => {
     console.log(`Analyse product prices ${result}`);
   });
-});*/
+});
 
 /**
  *  Challenge 2: Build a Product Catalog with Brand Metadata
@@ -114,7 +114,7 @@ export async function buildProductCatalog(
       (brand) => brand.id === product.brandId && brand.isActive,
     );
 
-    if (brand === undefined || !brand.isActive) {
+    if (!brand || !brand.isActive) {
       return;
     }
 
@@ -157,13 +157,11 @@ async function filterProductsWithOneImage(
   // Implement the function logic here
 
   return products
+    .filter((product) => product.images.length >= 1)
     .map((product) => {
-      if (product.images.length >= 1) {
-        product.images = [product.images[0]];
-        return product;
-      }
-    })
-    .filter((product) => product !== undefined);
+      product.images = [product.images[0]];
+      return product;
+    });
 }
 
 readJsonFile<Product>("./data/products.json").then((products) => {
