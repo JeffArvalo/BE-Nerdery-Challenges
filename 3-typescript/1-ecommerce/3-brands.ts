@@ -26,18 +26,18 @@ async function getCountriesWithBrandsAndProductCount(
   products: Product[],
 ): Promise<CountryProductCount[]> {
   // Implement the function logic here
-  return buildProductCatalog(products, brands).then((enrichedProducts) => {
-    const countryProductMap = new Map<string, number>();
+  const enrichedProducts = await buildProductCatalog(products, brands);
+  const countryProductMap = new Map<string, number>();
 
-    enrichedProducts.forEach((product) => {
-      const country = product.brandInfo.headquarters.split(", ")[1];
-      countryProductMap.set(country, (countryProductMap.get(country) ?? 0) + 1);
-    });
-
-    return Array.from(countryProductMap, ([country, productCount]) => {
-      return { country, productCount };
-    });
+  enrichedProducts.forEach((product) => {
+    const country = product.brandInfo.headquarters.split(", ")[1];
+    countryProductMap.set(country, (countryProductMap.get(country) ?? 0) + 1);
   });
+
+  return Array.from(countryProductMap, ([country, productCount]) => ({
+    country,
+    productCount,
+  }));
 }
 
 readJsonFile<Brand>("./data/brands.json").then((brands) => {
