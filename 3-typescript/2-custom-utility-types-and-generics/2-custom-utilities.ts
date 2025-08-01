@@ -22,7 +22,28 @@
 
 // Add here your solution
 
+type OmitByType<T, F> = {
+  [K in keyof T as T[K] extends F ? never : K]: T[K];
+};
+
 // Add here your example
+interface Game {
+  title: string;
+  sinopsis: string;
+  yearRelease: number;
+  consoles: string[];
+  createdAt: Date;
+  updateAt: Date | null;
+}
+
+type OmitDate = OmitByType<Game, Date | null>;
+
+const gameExample: OmitDate = {
+  title: "Tetris",
+  sinopsis: "Tetris is a tile-matching puzzle video game",
+  yearRelease: 1984,
+  consoles: ["GameBoy", "NES", "Super Nintendo"],
+};
 
 /**
  * Exercise #2: Implement the utility type `If<C, T, F>`, which evaluates a condition `C`
@@ -40,8 +61,17 @@
  */
 
 // Add here your solution
+type If<C, T, F> = C extends T ? T : F;
 
 // Add here your example
+type gameIfType<T> = If<T, Game, OmitDate>;
+
+const gameOutput: gameIfType<OmitDate> = {
+  title: "Tetris",
+  sinopsis: "Tetris is a tile-matching puzzle video game",
+  yearRelease: 1984,
+  consoles: ["GameBoy", "NES", "Super Nintendo"],
+};
 
 /**
  * Exercise #3: Recreate the built-in `Readonly<T>` utility type without using it.
@@ -66,8 +96,20 @@
  */
 
 // Add here your solution
+type MyReadonly<T> = {
+  readonly [R in keyof T]: T[R];
+};
 
 // Add here your example
+
+const tetris: MyReadonly<Game> = {
+  title: "Tetris",
+  sinopsis: "Tetris is a tile-matching puzzle video game",
+  yearRelease: 1984,
+  consoles: ["GameBoy", "NES", "Super Nintendo"],
+  createdAt: new Date(),
+  updateAt: null,
+};
 
 /**
  * Exercise #4: Recreate the built-in `ReturnType<T>` utility type without using it.
@@ -88,8 +130,23 @@
  */
 
 // Add here your solution
+type MyReturnType<T> = T extends (...arg: unknown[]) => infer R ? R : any;
 
 // Add here your example
+function createGame() {
+  const tetris: Game = {
+    title: "Tetris",
+    sinopsis: "Tetris is a tile-matching puzzle video game",
+    yearRelease: 1984,
+    consoles: ["GameBoy", "NES", "Super Nintendo"],
+    createdAt: new Date(),
+    updateAt: null,
+  };
+
+  return tetris;
+}
+
+type createGameType = MyReturnType<typeof createGame>;
 
 /**
  * Exercise #5: Extract the type inside a wrapped type like `Promise`.
@@ -106,8 +163,17 @@
  */
 
 // Add here your solution
+type Result = Awaited<GamePromise>;
+type Result2 = Awaited<typeof examplePromise>;
 
 // Add here your example
+
+type GamePromise = Promise<Game>;
+
+const examplePromise: GamePromise = new Promise((resolve) => {
+  const tetris = createGame();
+  resolve(tetris);
+});
 
 /**
  * Exercise 6: Create a utility type `RequiredByKeys<T, K>` that makes specific keys of `T` required.
@@ -131,5 +197,19 @@
  */
 
 // Add here your solution
+type RequiredByKeys<T, K extends keyof T = keyof T> = { [P in K]-?: T[P] } & {
+  [P in Exclude<keyof T, K>]?: T[P];
+};
 
-// Add here your example
+interface GameOptional {
+  title?: string;
+  sinopsis?: string;
+  yearRelease?: number;
+  consoles?: string[];
+  createdAt?: Date;
+  updateAt?: Date | null;
+}
+
+type OptionalKey = RequiredByKeys<GameOptional, "title" | "sinopsis">;
+
+type OptionalKey2 = RequiredByKeys<GameOptional>;
