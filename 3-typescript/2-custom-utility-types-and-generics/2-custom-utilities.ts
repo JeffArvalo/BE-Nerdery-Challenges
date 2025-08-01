@@ -130,7 +130,7 @@ const tetris: MyReadonly<Game> = {
  */
 
 // Add here your solution
-type MyReturnType<T> = T extends (...arg: any) => infer R ? R : any;
+type MyReturnType<T> = T extends (...arg: unknown[]) => infer R ? R : any;
 
 // Add here your example
 function createGame() {
