@@ -30,9 +30,7 @@ GROUP BY c.name;
 SELECT c.first_name, c.last_name, SUM(p.amount) total_spent
 FROM customer c
          INNER JOIN payment p ON c.customer_id = p.customer_id
-GROUP BY c.first_name, c.last_name
-ORDER BY total_spent DESC
-LIMIT 5;
+GROUP BY c.customer_id ORDER BY total_spent DESC LIMIT 5;
 
 
 /*
@@ -86,22 +84,26 @@ SELECT f.title, COUNT(r.rental_id) as rental_count FROM film f
          INNER JOIN inventory i ON i.film_id = f.film_id
          INNER JOIN rental r ON r.inventory_id = i.inventory_id
 GROUP BY f.title
-HAVING COUNT(r.rental_id) > (SELECT COUNT(ren.rental_id) / COUNT(DISTINCT fm.film_id) FROM rental ren
-FULL JOIN inventory inv on inv.inventory_id = ren.inventory_id
-FULL JOIN film fm on fm.film_id = inv.inventory_id);
+HAVING COUNT(r.rental_id) > (SELECT AVG(rentals_per_film)
+FROM (
+    SELECT COUNT(ren.rental_id) rentals_per_film
+    FROM film fm
+    LEFT JOIN inventory inv ON inv.film_id = fm.film_id
+    LEFT JOIN rental ren ON ren.inventory_id = inv.inventory_id
+    GROUP BY fm.film_id
+) film_rentals);
 
 
-WITH count_rental AS (SELECT COUNT(r.rental_id) as count_rental FROM rental r),
-     count_film AS (SELECT COUNT(f.film_id) as count_film FROM film f),
-     average_rental_count
-         AS (SELECT
-                 (SELECT count_rental FROM count_rental) / (SELECT count_film FROM count_film) AS average_rental_count)
-SELECT f.title, COUNT(r.rental_id) as rental_count
-FROM film f
-         INNER JOIN inventory i ON i.film_id = f.film_id
-         INNER JOIN rental r ON r.inventory_id = i.inventory_id
+WITH film_rentals AS (SELECT COUNT(r.rental_id) rentals_film FROM film f
+                        LEFT JOIN inventory i ON i.film_id = f.film_id
+                        LEFT JOIN rental r ON r.inventory_id = i.inventory_id
+                      GROUP BY f.film_id),
+    average_rental_count AS (SELECT AVG(rentals_film) as avg_rental_count from film_rentals)
+SELECT f.title, COUNT(r.rental_id) as rental_count FROM film f
+    INNER JOIN inventory i ON i.film_id = f.film_id
+    INNER JOIN rental r ON r.inventory_id = i.inventory_id
 GROUP BY f.title
-HAVING COUNT(r.rental_id) > (SELECT average_rental_count FROM average_rental_count);
+HAVING COUNT(r.rental_id) > (SELECT avg_rental_count FROM average_rental_count);
 
 
 /*
@@ -117,7 +119,7 @@ HAVING COUNT(r.rental_id) > (SELECT average_rental_count FROM average_rental_cou
 -- your query here
 
 SELECT c.first_name, c.last_name, MIN(r.rental_date) AS first_rental, MAX(r.rental_date) AS last_rental, 
-       (MAX(r.rental_date) - MIN(r.rental_date)) AS rental_span_days FROM rental r
+        DATE_PART('DAY', MAX(r.rental_date) - MIN(r.rental_date)) AS rental_span_days FROM rental r
     INNER JOIN customer c ON r.customer_id = c.customer_id
 GROUP BY c.customer_id
 ORDER BY rental_span_days DESC;
