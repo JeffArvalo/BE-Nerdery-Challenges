@@ -59,12 +59,12 @@ begin
         USING HINT = 'Transfer have to be to different accounts';
     END IF;
 
-    SELECT * INTO from_query FROM banking.accounts a WHERE a.account_id = from_id;
+    SELECT * INTO from_query FROM banking.accounts a WHERE a.account_id = from_id FOR UPDATE;
     IF from_query IS NULL THEN
         RAISE EXCEPTION 'The id account % does not exist in table Account', from_id;
     END IF;
 
-    SELECT * INTO to_query FROM banking.accounts a WHERE a.account_id = to_id;
+    SELECT * INTO to_query FROM banking.accounts a WHERE a.account_id = to_id FOR UPDATE;
     IF to_query IS NULL THEN
         RAISE EXCEPTION 'The id account % does not exist in table Account', to_id;
     END IF;
