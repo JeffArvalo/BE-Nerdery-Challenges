@@ -11,6 +11,10 @@
 
 -- your query here
 
+SELECT c.name category, COUNT(c.category_id) film_count
+FROM category c
+    INNER JOIN film_category fc ON c.category_id = fc.category_id
+GROUP BY c.name;
 
  /*
     Challenge 2.
@@ -23,7 +27,10 @@
 
  -- your query here
 
-
+SELECT c.first_name, c.last_name, SUM(p.amount) total_spent
+FROM customer c
+         INNER JOIN payment p ON c.customer_id = p.customer_id
+GROUP BY c.customer_id ORDER BY total_spent DESC LIMIT 5;
 
 
 /*
@@ -38,6 +45,12 @@
 
 -- your query here
 
+SELECT DISTINCT f.title FROM film f
+         INNER JOIN inventory i ON i.film_id = f.film_id
+         INNER JOIN rental r ON r.inventory_id = i.inventory_id
+WHERE CURRENT_TIMESTAMP - Interval '10 years' < r.rental_date
+ORDER BY f.title;
+
 
 /*
     Challenge 4.
@@ -50,6 +63,9 @@
 
 -- your query here
 
+SELECT f.title FROM film f
+ INNER JOIN inventory i ON i.film_id = f.film_id
+WHERE i.inventory_id NOT IN (SELECT DISTINCT r.inventory_id FROM rental r)
 
 
 
@@ -64,6 +80,31 @@
 
 
 -- your query here
+SELECT f.title, COUNT(r.rental_id) as rental_count FROM film f
+         INNER JOIN inventory i ON i.film_id = f.film_id
+         INNER JOIN rental r ON r.inventory_id = i.inventory_id
+GROUP BY f.title
+HAVING COUNT(r.rental_id) > (SELECT AVG(rentals_per_film)
+FROM (
+    SELECT COUNT(ren.rental_id) rentals_per_film
+    FROM film fm
+    LEFT JOIN inventory inv ON inv.film_id = fm.film_id
+    LEFT JOIN rental ren ON ren.inventory_id = inv.inventory_id
+    GROUP BY fm.film_id
+) film_rentals);
+
+
+WITH film_rentals AS (SELECT COUNT(r.rental_id) rentals_film FROM film f
+                        LEFT JOIN inventory i ON i.film_id = f.film_id
+                        LEFT JOIN rental r ON r.inventory_id = i.inventory_id
+                      GROUP BY f.film_id),
+    average_rental_count AS (SELECT AVG(rentals_film) as avg_rental_count from film_rentals)
+SELECT f.title, COUNT(r.rental_id) as rental_count FROM film f
+    INNER JOIN inventory i ON i.film_id = f.film_id
+    INNER JOIN rental r ON r.inventory_id = i.inventory_id
+GROUP BY f.title
+HAVING COUNT(r.rental_id) > (SELECT avg_rental_count FROM average_rental_count);
+
 
 /*
     Challenge 6.
@@ -77,6 +118,12 @@
 
 -- your query here
 
+SELECT c.first_name, c.last_name, MIN(r.rental_date) AS first_rental, MAX(r.rental_date) AS last_rental, 
+        DATE_PART('DAY', MAX(r.rental_date) - MIN(r.rental_date)) AS rental_span_days FROM rental r
+    INNER JOIN customer c ON r.customer_id = c.customer_id
+GROUP BY c.customer_id
+ORDER BY rental_span_days DESC;
+
 /*
     Challenge 7.
     Find all customers who have not rented movies from every available genre.
@@ -86,6 +133,14 @@
 
 
 -- your query here
+SELECT c.first_name, c.last_name FROM rental r
+    INNER JOIN customer c ON r.customer_id = c.customer_id
+    INNER JOIN inventory i ON i.inventory_id = r.inventory_id
+    INNER JOIN film f ON f.film_id = i.film_id
+    INNER JOIN film_category fc ON f.film_id = fc.film_id
+    INNER JOIN category cat ON cat.category_id = fc.category_id
+GROUP BY c.customer_id, c.first_name, c.last_name
+HAVING COUNT(DISTINCT fc.category_id) < (SELECT COUNT(cat2.category_id) FROM category cat2);
 
 
 /*
@@ -108,9 +163,33 @@
     When would you prefer a materialized view over a regular view? 
     How often should it be refreshed?
 */
+-- Answers
+/*   
+    When would you prefer a materialized view over a regular view? 
+       When you want to store the data in the materialized view to get a quickly access improving the performance, 
+       and is recommended when the data in the original table won't be changed constantly.
 
+    How often should it be refreshed?
+        In depent of the data traffic, I think that weekly will be a good refreshing time but is ideal to be monthly.
+*/
 -- your work here
+CREATE MATERIALIZED VIEW IF NOT EXISTS revenue_by_category
+AS (
+    SELECT c.name, SUM(p.amount) total_revenue
+    FROM rental r
+        INNER JOIN payment p ON r.rental_id = p.rental_id
+        INNER JOIN inventory i ON i.inventory_id = r.inventory_id
+        INNER JOIN film f ON f.film_id = i.film_id
+        INNER JOIN film_category fc ON f.film_id = fc.film_id
+        INNER JOIN category c ON c.category_id = fc.category_id
+    GROUP BY c.name
+    ORDER BY total_revenue DESC);
 
+SELECT * FROM revenue_by_category;
+
+SELECT * FROM revenue_by_category LIMIT 3;
+
+REFRESH MATERIALIZED VIEW revenue_by_category;
 
 
 

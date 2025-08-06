@@ -41,3 +41,52 @@
 
 
 -- your solution here
+
+create or replace function banking.transfer_funds(from_id INT, to_id INT, amount_to NUMERIC)
+    returns setof banking.transactions
+as
+$$
+declare from_query   banking.accounts%ROWTYPE;
+        to_query     banking.accounts%ROWTYPE;
+        reference_id text := uuid_generate_v4();
+begin
+    IF amount_to <= 0 THEN
+        RAISE EXCEPTION 'The amount have to be greater than zero, your amount: %', amount_to;
+    END IF;
+
+    IF from_id = to_id THEN
+        RAISE EXCEPTION 'Trying to transfer to same account, from account: %, to account: %', from_id, to_id
+        USING HINT = 'Transfer have to be to different accounts';
+    END IF;
+
+    SELECT * INTO from_query FROM banking.accounts a WHERE a.account_id = from_id FOR UPDATE;
+    IF from_query IS NULL THEN
+        RAISE EXCEPTION 'The id account % does not exist in table Account', from_id;
+    END IF;
+
+    SELECT * INTO to_query FROM banking.accounts a WHERE a.account_id = to_id FOR UPDATE;
+    IF to_query IS NULL THEN
+        RAISE EXCEPTION 'The id account % does not exist in table Account', to_id;
+    END IF;
+
+    IF from_query.status = 'frozen' OR to_query.status = 'frozen' THEN
+        RAISE EXCEPTION 'Both account have to be active to do the transaction';
+    END IF;
+    
+    IF from_query.balance < amount_to THEN
+        RAISE EXCEPTION 'The funds are not sufficient to complete the transaction';
+    END IF;
+
+    UPDATE banking.accounts a SET balance = (from_query.balance - amount_to) WHERE a.account_id = from_id;
+    UPDATE banking.accounts a SET balance = (to_query.balance + amount_to) WHERE a.account_id = to_id;
+
+    INSERT INTO banking.transactions (account_id, amount, transaction_type, reference)
+    VALUES (from_id, amount_to, 'withdrawal', reference_id);
+    INSERT INTO banking.transactions (account_id, amount, transaction_type, reference)
+    VALUES (to_id, amount_to, 'deposit', reference_id);
+
+    return query SELECT * FROM banking.transactions t where t.reference = reference_id;
+end
+$$ language plpgsql;
+
+select * from banking.transfer_funds(2, 1, 1)
