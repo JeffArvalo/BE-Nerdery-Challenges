@@ -17,8 +17,63 @@
  *
  * @returns {Promise<string>} Logs the subscription name as a string.
  */
+
+const {
+  getLikedMovies,
+  getDislikedMovies,
+  getUsers,
+  getUserSubscriptionByUserId,
+} = require("./utils/mocked-api");
+
 const getCommonDislikedSubscription = async () => {
   // Add your code here
+  const allUsers = await getUsers();
+  const likedMovies = await getLikedMovies();
+  const dislikedmovies = await getDislikedMovies();
+
+  const userLikeCount = new Map();
+  likedMovies.map((review) => {
+    userLikeCount.set(review.userId, review.movies.length);
+  });
+
+  const userDislikeCount = new Map();
+  dislikedmovies.map((review) => {
+    userDislikeCount.set(review.userId, review.movies.length);
+  });
+
+  const users = allUsers
+    .map((user) => {
+      if (userDislikeCount.get(user.id) > userLikeCount.get(user.id))
+        return user;
+    })
+    .filter((user) => user !== undefined);
+
+  const subscriptionsCount = new Map();
+  await users.map(async (user) => {
+    const subscription = await getUserSubscriptionByUserId(user.id);
+    const subscriptionName = subscription.subscription;
+
+    if (subscriptionsCount.has(subscriptionName)) {
+      subscriptionsCount.set(
+        subscriptionName,
+        subscriptionsCount.get(subscriptionName) + 1,
+      );
+    } else {
+      subscriptionsCount.set(subscriptionName, 1);
+    }
+  });
+
+  let commonSubsciption = "";
+  let maxCount = 0;
+
+  subscriptionsCount.forEach((value, key) => {
+    if (value > maxCount) {
+      maxCount = value;
+      commonSubsciption = key;
+    }
+  });
+
+  return commonSubsciption;
 };
 
 getCommonDislikedSubscription().then((subscription) => {
